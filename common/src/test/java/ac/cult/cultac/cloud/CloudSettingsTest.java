@@ -43,10 +43,14 @@ class CloudSettingsTest {
     }
 
     @Test
-    void onlyHttpsOrLoopbackHttpWithoutUserInfoTurnsTheUploadOn() throws Exception {
+    void onlyHttpsOrLoopbackOrPrivateNetworkHttpWithoutUserInfoTurnsTheUploadOn() throws Exception {
         try (Globals globals = new Globals()) {
             for (String url : List.of(
                     "http://example.com",
+                    "http://11.0.0.2:8190",
+                    "http://172.32.0.1",
+                    "http://192.169.1.1",
+                    "http://10.0.0.2.example",
                     "https://u:p@example.com",
                     "https://example.com?key=1",
                     "https://example.com#part",
@@ -60,12 +64,16 @@ class CloudSettingsTest {
                     "http://127.0.0.1:8080/base",
                     "http://localhost:8080",
                     "http://[::1]:8080",
+                    "http://10.0.0.2:8190",
+                    "http://172.16.4.20",
+                    "http://172.31.255.255",
+                    "http://192.168.1.10:8080",
                     "https://example.com",
                     "https://example.com:8443/base")) {
                 assertTrue(read(url).enabled(), url);
             }
             synchronized (globals.logs) {
-                assertEquals(7, globals.logs.size());
+                assertEquals(11, globals.logs.size());
                 assertTrue(globals.logs.stream()
                         .noneMatch(record -> record.getMessage().contains("u:p")));
             }

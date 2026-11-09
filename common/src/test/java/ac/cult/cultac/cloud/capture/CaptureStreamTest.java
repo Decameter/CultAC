@@ -1379,13 +1379,32 @@ class CaptureStreamTest {
         tick(stream, 10);
         IntakeWire.Geometry geometry =
                 new IntakeWire.Geometry(0, "minecraft:player", new double[6], new double[] {0, 1.62, 0}, 2.0);
-        stream.verdict(1, 1, 0, List.of(), new IntakeWire.Target(5, 2.0), List.of(geometry), null);
+        double[] box = {1, 2, 3, 1.6, 3.8, 3.6};
+        IntakeWire.Target sight = new IntakeWire.Target(5, 2.0, box, new double[] {0, 1.62, 0});
+        stream.verdict(1, 1, 0, List.of(), sight, List.of(geometry), null);
 
         Verdict verdict = frames(sink).get(0).verdict();
         assertEquals(5, verdict.getTarget().getEntityId());
         assertEquals(2.0, verdict.getTarget().getReach(), 0);
+        assertEquals(List.of(1.0, 2.0, 3.0, 1.6, 3.8, 3.6), verdict.getTarget().getBoxList());
+        assertEquals(List.of(0.0, 1.62, 0.0), verdict.getTarget().getEyesList());
         assertEquals(1, verdict.getGeometryCount());
         assertEquals(0, verdict.getTickEndSeq());
+    }
+
+    @Test
+    void aSightWithoutAUsableBoxGoesWithoutBoxAndEyes() {
+        TestSink sink = new TestSink();
+        CaptureStream stream = answered(sink);
+        tick(stream, 10);
+        double[] inverted = {2, 0, 0, 1, 1, 1};
+        stream.verdict(1, 1, 0, List.of(), new IntakeWire.Target(5, null, inverted, new double[] {0, 1.62, 0}), List.of(), null);
+
+        Verdict verdict = frames(sink).get(0).verdict();
+        assertEquals(5, verdict.getTarget().getEntityId());
+        assertFalse(verdict.getTarget().hasReach());
+        assertEquals(0, verdict.getTarget().getBoxCount());
+        assertEquals(0, verdict.getTarget().getEyesCount());
     }
 
     @Test

@@ -397,8 +397,16 @@ public final class IntakeWire {
         }
     }
 
-    /** The crosshair on the last attacked target: {@code reach} to it, null when the crosshair is off it. */
-    public record Target(int entityId, Double reach) {}
+    /**
+     * The crosshair on the last attacked target: {@code reach} to it, null when the crosshair is off it, and the
+     * target's lag-compensated reach box and the eyes the client may have picked from, as {@link Geometry}'s.
+     */
+    public record Target(int entityId, Double reach, double[] box, double[] eyes) {
+        /** A sight without the target's box and eyes, which goes out as protocol 5 first sent it. */
+        public Target(int entityId, Double reach) {
+            this(entityId, reach, null, null);
+        }
+    }
 
     /** One attack's lag-compensated geometry; {@code box} is min then max, {@code eyes} x, y, z per eye. */
     public record Geometry(int attack, String type, double[] box, double[] eyes, Double reach) {}
@@ -540,21 +548,41 @@ public final class IntakeWire {
 
     private static int targetSize(Target target) {
         int size = target.entityId() != 0 ? CodedOutputStream.computeUInt32Size(1, target.entityId()) : 0;
-        return onTarget(target) ? size + CodedOutputStream.computeDoubleSize(2, target.reach()) : size;
+        if (onTarget(target)) size += CodedOutputStream.computeDoubleSize(2, target.reach());
+        int eyes = validEyes(target.box(), target.eyes());
+        return eyes == 0 ? size : size + nested(3, 6 * 8) + nested(4, eyes * 3 * 8);
     }
 
     private static void writeTarget(CodedOutputStream out, Target target) throws IOException {
         if (target.entityId() != 0) out.writeUInt32(1, target.entityId());
         if (onTarget(target)) out.writeDouble(2, target.reach());
+        int eyes = validEyes(target.box(), target.eyes());
+        if (eyes != 0) writeBoxAndEyes(out, target.box(), target.eyes(), eyes);
     }
 
     private static boolean valid(Geometry geometry) {
-        int eyes = Math.min(geometry.eyes().length / 3, MAX_EYES);
-        if (geometry.attack() < 0 || geometry.box().length != 6 || eyes == 0) return false;
-        for (double bound : geometry.box()) if (!Double.isFinite(bound)) return false;
-        for (int axis = 0; axis < 3; axis++) if (geometry.box()[axis] > geometry.box()[axis + 3]) return false;
-        for (int i = 0; i < eyes * 3; i++) if (!Double.isFinite(geometry.eyes()[i])) return false;
-        return true;
+        return geometry.attack() >= 0 && validEyes(geometry.box(), geometry.eyes()) != 0;
+    }
+
+    /** The eyes a box and its eyes write, at most {@link #MAX_EYES}; 0 when either is missing or not finite. */
+    private static int validEyes(double[] box, double[] eyes) {
+        if (box == null || eyes == null || box.length != 6) return 0;
+        int count = Math.min(eyes.length / 3, MAX_EYES);
+        for (double bound : box) if (!Double.isFinite(bound)) return 0;
+        for (int axis = 0; axis < 3; axis++) if (box[axis] > box[axis + 3]) return 0;
+        for (int i = 0; i < count * 3; i++) if (!Double.isFinite(eyes[i])) return 0;
+        return count;
+    }
+
+    /** A box as field 3 and its first {@code count} eyes as field 4, both packed, as Geometry and Target write them. */
+    private static void writeBoxAndEyes(CodedOutputStream out, double[] box, double[] eyes, int count)
+            throws IOException {
+        out.writeTag(3, 2);
+        out.writeUInt32NoTag(6 * 8);
+        for (double bound : box) out.writeDoubleNoTag(bound);
+        out.writeTag(4, 2);
+        out.writeUInt32NoTag(count * 3 * 8);
+        for (int i = 0; i < count * 3; i++) out.writeDoubleNoTag(eyes[i]);
     }
 
     private static boolean hasReach(Geometry geometry) {
@@ -574,12 +602,7 @@ public final class IntakeWire {
         int eyes = Math.min(geometry.eyes().length / 3, MAX_EYES);
         if (geometry.attack() != 0) out.writeUInt32(1, geometry.attack());
         out.writeString(2, truncate(geometry.type(), MAX_STRING_BYTES));
-        out.writeTag(3, 2);
-        out.writeUInt32NoTag(6 * 8);
-        for (double bound : geometry.box()) out.writeDoubleNoTag(bound);
-        out.writeTag(4, 2);
-        out.writeUInt32NoTag(eyes * 3 * 8);
-        for (int i = 0; i < eyes * 3; i++) out.writeDoubleNoTag(geometry.eyes()[i]);
+        writeBoxAndEyes(out, geometry.box(), geometry.eyes(), eyes);
         if (hasReach(geometry)) out.writeDouble(5, geometry.reach());
     }
 

@@ -54,6 +54,18 @@ class CloudConnectionHostileIntakeTest {
     }
 
     @Test
+    void aPrivateNetworkConnectKeepsItsPlainSocketOnTheSameAddress() {
+        URI lan = URI.create("http://10.0.0.2:8190/api/v1/connect");
+        assertTrue(CloudConnection.answerAllowed(lan, "ws://10.0.0.2:8190/api/v1/intake?server=lobby"));
+        assertTrue(CloudConnection.answerAllowed(lan, "wss://replica.example/intake"));
+        assertFalse(CloudConnection.answerAllowed(lan, "ws://10.0.0.3:8190/intake"));
+        assertFalse(CloudConnection.answerAllowed(lan, "ws://127.0.0.1:8190/intake"));
+        assertFalse(CloudConnection.answerAllowed(lan, "ws://replica.example/intake"));
+        assertFalse(CloudConnection.answerAllowed(
+                URI.create("http://127.0.0.1:8080/api/v1/connect"), "ws://10.0.0.2:8190/intake"));
+    }
+
+    @Test
     void aPlainSocketUrlOffThisMachineIsNeverOpened() throws Exception {
         try (Globals globals = new Globals();
                 Receiver receiver = new Receiver()) {

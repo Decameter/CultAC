@@ -845,6 +845,18 @@ class IntakeWireTest {
         assertTrue(off.hasTarget());
         assertEquals(-3, off.getTarget().getEntityId());
         assertFalse(off.getTarget().hasReach());
+        assertEquals(0, off.getTarget().getBoxCount());
+    }
+
+    @Test
+    void targetCarriesItsBoxAndEyes() throws InvalidProtocolBufferException {
+        double[] box = {-1, 64, 2, -0.4, 65.8, 2.6};
+        double[] eyes = {0, 65.62, 0, 0.5, 65.62, 0};
+        Verdict verdict =
+                verdict(0, 1, false, List.of(), new IntakeWire.Target(9, null, box, eyes), List.of(), null, null, -1);
+        assertEquals(List.of(-1.0, 64.0, 2.0, -0.4, 65.8, 2.6), verdict.getTarget().getBoxList());
+        assertEquals(List.of(0.0, 65.62, 0.0, 0.5, 65.62, 0.0), verdict.getTarget().getEyesList());
+        assertFalse(verdict.getTarget().hasReach());
     }
 
     @Test

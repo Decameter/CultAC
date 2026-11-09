@@ -387,6 +387,11 @@ message Target {
   uint32 entity_id = 1;
   // The crosshair's reach to the target; absent when the crosshair is off it.
   optional double reach = 2;
+  // The target's lag-compensated reach box this tick, as Geometry's: min x, y, z, then max x, y, z. Empty when the
+  // sender does not report it.
+  repeated double box = 3;
+  // 1 to 8 eye positions the client may have picked from this tick, x, y, z each; empty when box is.
+  repeated double eyes = 4;
 }
 
 message Bedrock {

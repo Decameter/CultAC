@@ -1179,8 +1179,8 @@ public final class CloudCapture implements PlayerObserver {
 
     /**
      * For a while after an attack, the crosshair's reach this tick to the last attacked target's reach box, from the
-     * eye of the pose the client began its tick in, where it stood then, along this tick's rotation; null when the
-     * look misses it or no target is followed.
+     * eye of the pose the client began its tick in, where it stood then, along this tick's rotation, with that box and
+     * those eyes; the reach is null when the look misses the box, and the whole sight null when no target is followed.
      */
     private IntakeWire.Target sight() {
         if (sightTarget < 0) return null;
@@ -1198,6 +1198,14 @@ public final class CloudCapture implements PlayerObserver {
         Vector3dm look = ReachUtils.getLook(player, player.xRot, player.yRot);
         double reach = Double.MAX_VALUE;
         double height = player.getEyeHeight();
+        int eyeCount = Math.min(origins.size(), MAX_EYES);
+        double[] eyes = new double[eyeCount * 3];
+        for (int i = 0; i < eyeCount; i++) {
+            Vec3 from = origins.get(i);
+            eyes[i * 3] = from.x;
+            eyes[i * 3 + 1] = from.y + height;
+            eyes[i * 3 + 2] = from.z;
+        }
         for (Vec3 from : origins) {
             Vector3dm eye = new Vector3dm(from.x, from.y + height, from.z);
             if (ReachUtils.isVecInside(box, eye)) {
@@ -1209,7 +1217,8 @@ public final class CloudCapture implements PlayerObserver {
             Vector3dm intercept = ReachUtils.calculateIntercept(box, eye, end).getFirst();
             if (intercept != null) reach = Math.min(reach, eye.distance(intercept));
         }
-        return new IntakeWire.Target(sightTarget, reach == Double.MAX_VALUE ? null : reach);
+        double[] bounds = {box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ};
+        return new IntakeWire.Target(sightTarget, reach == Double.MAX_VALUE ? null : reach, bounds, eyes);
     }
 
     private void verdict(

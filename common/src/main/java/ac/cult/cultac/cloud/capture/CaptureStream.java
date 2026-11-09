@@ -1319,7 +1319,7 @@ public final class CaptureStream {
                         -1L,
                         false,
                         flags,
-                        new IntakeWire.Target(-1, Double.MAX_VALUE),
+                        new IntakeWire.Target(-1, Double.MAX_VALUE, box, eyes),
                         geometries,
                         engine,
                         null,

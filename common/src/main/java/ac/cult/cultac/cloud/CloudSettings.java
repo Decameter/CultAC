@@ -31,6 +31,11 @@ public record CloudSettings(
     public static final List<Integer> PROTOCOLS = List.of(5);
 
     private static final Pattern LOOPBACK_V4 = Pattern.compile("127(\\.(25[0-5]|2[0-4]\\d|1?\\d?\\d)){3}");
+    /** RFC 1918's 10/8, 172.16/12 and 192.168/16, as IPv4 literals. */
+    private static final Pattern PRIVATE_V4 = Pattern.compile(
+            "(10(\\.(25[0-5]|2[0-4]\\d|1?\\d?\\d)){3})"
+                    + "|(172\\.(1[6-9]|2\\d|3[01])(\\.(25[0-5]|2[0-4]\\d|1?\\d?\\d)){2})"
+                    + "|(192\\.168(\\.(25[0-5]|2[0-4]\\d|1?\\d?\\d)){2})");
     /** Visible ASCII only, so the key always makes a valid {@code Authorization} header. */
     private static final Pattern API_KEY = Pattern.compile("[\\x21-\\x7E]+");
 
@@ -60,8 +65,8 @@ public record CloudSettings(
         String serverId = config.getStringElse("cloud.server-id", "");
         String url = url(config, env);
         if (!url.isEmpty() && !allowedUrl(url)) {
-            LogUtil.warn("Cloud upload off: cloud.url must be https, or http to a loopback host, with a host and no"
-                    + " user info, query or fragment");
+            LogUtil.warn("Cloud upload off: cloud.url must be https, or http to a loopback host or a private-network IP"
+                    + " address, with a host and no user info, query or fragment");
             url = "";
         }
         String proxyId = config.getStringElse("cloud.proxy-id", "");
@@ -116,8 +121,8 @@ public record CloudSettings(
     }
 
     /**
-     * Whether {@code url} may carry the API key: {@code https} with a host, or {@code http} to a loopback host, without
-     * user info, query or fragment.
+     * Whether {@code url} may carry the API key: {@code https} with a host, or {@code http} to a loopback host or a
+     * private-network IP address, without user info, query or fragment.
      */
     static boolean allowedUrl(String url) {
         URI uri;
@@ -131,7 +136,7 @@ public record CloudSettings(
         if (uri.getRawUserInfo() != null || uri.getRawQuery() != null || uri.getRawFragment() != null) return false;
         return switch (scheme.toLowerCase(Locale.ROOT)) {
             case "https" -> true;
-            case "http" -> loopback(uri.getHost());
+            case "http" -> loopback(uri.getHost()) || privateNetwork(uri.getHost());
             default -> false;
         };
     }
@@ -142,6 +147,14 @@ public record CloudSettings(
         return host.equalsIgnoreCase("localhost")
                 || host.equals("[::1]")
                 || LOOPBACK_V4.matcher(host).matches();
+    }
+
+    /**
+     * Whether {@code host} is a private-network (RFC 1918) IPv4 literal: an address whose traffic stays on the operator's
+     * own network, written out so that no DNS answer can move it elsewhere.
+     */
+    public static boolean privateNetwork(String host) {
+        return host != null && PRIVATE_V4.matcher(host).matches();
     }
 
     /** Whether the upload runs: a service, a key and a protocol to offer. */

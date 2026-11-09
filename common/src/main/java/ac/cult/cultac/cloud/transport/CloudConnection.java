@@ -974,8 +974,9 @@ public final class CloudConnection {
     }
 
     /**
-     * Whether the socket URL connect answered may be sent the key: {@code wss}, or {@code ws} to a loopback host when the
-     * connect itself went over {@code http} to a loopback host, with a host and no user info.
+     * Whether the socket URL connect answered may be sent the key: {@code wss}, or {@code ws} when the connect itself went
+     * over {@code http}, to a loopback host after a loopback connect or to the very private-network address connect
+     * went to; with a host and no user info.
      */
     static boolean answerAllowed(URI connect, String answer) {
         URI socket;
@@ -989,8 +990,9 @@ public final class CloudConnection {
             case "wss" -> true;
             case "ws" ->
                 "http".equalsIgnoreCase(connect.getScheme())
-                        && CloudSettings.loopback(connect.getHost())
-                        && CloudSettings.loopback(socket.getHost());
+                        && (CloudSettings.loopback(connect.getHost()) && CloudSettings.loopback(socket.getHost())
+                                || CloudSettings.privateNetwork(connect.getHost())
+                                        && connect.getHost().equals(socket.getHost()));
             default -> false;
         };
     }
