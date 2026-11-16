@@ -49,6 +49,11 @@ max-transaction-time: 60
 launch-safety:
   fail-open: true
 
+# Bedrock-spelers overslaan zolang Geyser niet op deze server is geïnstalleerd, bijvoorbeeld op een
+# Paper-backend achter een proxy die Geyser draait. Zonder lokale Geyser ziet CultAC hun Bedrock-beweging nooit
+# en kan het ze hier niet controleren; installeer CultAC op de Geyser-proxy om ze daar te controleren.
+exempt-bedrock-without-local-geyser: false
+
 # Enable this to stop Cult cancelling pongs received from players.
 # This may improve compatibility with other anticheats. It may cause issues with packet limiters.
 # Do not enable this if you are not sure what you are doing.

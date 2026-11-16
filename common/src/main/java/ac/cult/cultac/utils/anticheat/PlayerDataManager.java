@@ -2,6 +2,7 @@ package ac.cult.cultac.utils.anticheat;
 
 import ac.cult.cultac.CultAPI;
 import ac.cult.cultac.bedrock.MovementPlatform;
+import ac.cult.cultac.bedrock.bridge.GeyserBedrockBridgeRuntime;
 import ac.cult.cultac.bedrock.player.BedrockPlayerState;
 import ac.cult.cultac.cloud.CloudModule;
 import ac.cult.cultac.dialog.Dialogs;
@@ -20,6 +21,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.BooleanSupplier;
 import org.jetbrains.annotations.Nullable;
 
 public class PlayerDataManager {
@@ -74,6 +76,16 @@ public class PlayerDataManager {
 
         if (isExemptUser(user)) return false;
         if (!ChannelHelper.isOpen(user.getChannel())) return false;
+
+        // Without a Geyser bridge here, a Bedrock player's own movement never reaches this server, so the Bedrock
+        // engine cannot run for them; the Geyser proxy's CultAC checks them instead.
+        if (exemptsBedrockWithoutLocalGeyser(
+                CultAPI.INSTANCE.getConfigManager().isExemptBedrockWithoutLocalGeyser(),
+                GeyserBedrockBridgeRuntime::isRunning,
+                () -> isKnownBedrockPlayer(user.getUUID()))) {
+            exemptUser(user);
+            return false;
+        }
 
         // Match CultAC: permission state belongs to the exact Cult connection.
         CultPlayer cultPlayer = getPlayer(user);
@@ -258,6 +270,15 @@ public class PlayerDataManager {
                 || ((CultAPI.INSTANCE.getPluginManager().isPluginEnabled("Geyser-Spigot")
                                 || CultAPI.INSTANCE.getPluginManager().isPluginEnabled("Geyser-Velocity"))
                         && GeyserUtil.isGeyserPlayer(uuid));
+    }
+
+    /**
+     * Whether {@code exempt-bedrock-without-local-geyser} skips this player: the setting is on, this server runs no
+     * Geyser bridge and the player is a Bedrock player. Later conditions are only evaluated when earlier ones hold.
+     */
+    public static boolean exemptsBedrockWithoutLocalGeyser(
+            boolean enabled, BooleanSupplier localGeyser, BooleanSupplier bedrockPlayer) {
+        return enabled && !localGeyser.getAsBoolean() && bedrockPlayer.getAsBoolean();
     }
 
     private boolean isGeyserFormattedUuid(UUID uuid) {

@@ -92,6 +92,10 @@ public class BaseConfigManager {
     @Getter
     private boolean bedrockMovementSetbacksEnabled = true;
 
+    /** Skip Bedrock players while this server runs no Geyser bridge, e.g. a backend behind a Geyser proxy. */
+    @Getter
+    private boolean exemptBedrockWithoutLocalGeyser = false;
+
     private static double nonNegativeElse(ConfigManager config, String key, double fallback) {
         double value = config.getDoubleElse(key, fallback);
         return value >= 0 ? value : fallback;
@@ -155,6 +159,7 @@ public class BaseConfigManager {
                 "<red>An error occurred whilst processing packets. Please contact the administrators.");
         disablePongCancelling = config.getBooleanElse("disable-pong-cancelling", false);
         launchFailOpen = config.getBooleanElse("launch-safety.fail-open", true);
+        exemptBedrockWithoutLocalGeyser = config.getBooleanElse("exempt-bedrock-without-local-geyser", false);
         maxPingKnockback = config.getIntElse("cult.prediction.max-knockback-ping-ms", 1000);
 
         // owner-authored config semantics: strip e.g. the " (Velocity)" suffix from brands

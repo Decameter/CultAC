@@ -49,6 +49,11 @@ max-transaction-time: 60
 launch-safety:
   fail-open: true
 
+# Omite jucătorii Bedrock cât timp Geyser nu este instalat pe acest server, de exemplu pe un backend Paper
+# din spatele unui proxy care rulează Geyser. Fără un Geyser local, CultAC nu vede niciodată mișcarea lor Bedrock
+# și nu îi poate verifica aici; instalează CultAC pe proxy-ul Geyser pentru a-i verifica acolo.
+exempt-bedrock-without-local-geyser: false
+
 # Activează pentru a opri Cult din a anula pongs primite de la jucători.
 # Poate îmbunătăți compatibilitatea cu alte anticheaturi. Poate cauza probleme cu limitatoarele de pachete.
 # Nu activa dacă nu ești sigur ce faci.

@@ -51,6 +51,10 @@ max-transaction-time: 60
 launch-safety:
   fail-open: true
 
+# 当本服务器未安装 Geyser 时跳过基岩版玩家，例如位于运行 Geyser 的代理之后的 Paper 后端。
+# 没有本地 Geyser 时，CultAC 无法看到他们的基岩版移动，因此无法在此检查；请在 Geyser 代理上安装 CultAC 以在那里检查。
+exempt-bedrock-without-local-geyser: false
+
 # 启用此选项可禁止Cult取消接收到的Pong包。
 # 可能会优化和其他反作弊的兼容性，但可能会与数据包限制器冲突
 # 在你不知道你在干什么的情况下，不要启用。
