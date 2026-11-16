@@ -30,7 +30,7 @@ public final class ItemUseDesync extends CultProcessor implements PostPrediction
     public void onPredictionComplete(PredictionComplete complete) {
         if (!player.usesModernJavaItemUse() || complete.isTeleport() || complete.isExempt()) return;
         var evidence = complete.getPredictionResult().getItemUseResult();
-        double threshold = player.checkManager.getListener(NoSlow.class).threshold();
+        double threshold = player.checkManager.getNoSlow().threshold();
         if (evidence == null || !evidence.state().required() || evidence.deterministic(threshold)) return;
         boolean alreadyDesynced = pendingTick == evidence.state().tick() && Boolean.TRUE.equals(pending);
         pendingTick = evidence.state().tick();
@@ -38,8 +38,11 @@ public final class ItemUseDesync extends CultProcessor implements PostPrediction
         // Decide before SetbackTeleportUtil can promote this movement to its rollback
         // anchor. The accounting closes at tick-end and survives movement setbacks.
         // The rejected movement is a client tick, so the correction advances it from the anchor.
-        if (pending && !alreadyDesynced && history.wouldExceed(true) && !player.noSetbackPermission)
+        if (pending && !alreadyDesynced && history.wouldExceed(true) && !player.noSetbackPermission) {
             player.getSetbackTeleportUtil().executeViolationSetback();
+            // The setback rejects this movement; the server's living flags settle the use the next ones travel with.
+            player.resyncItemUse();
+        }
     }
 
     @Override

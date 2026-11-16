@@ -112,7 +112,10 @@ public final class ClientEntityQueries {
         var result = new ArrayList<Box>();
         var search = query.inflate(1.0E-7);
         SimpleCollisionBox candidate = null;
-        for (var entity : player.compensatedEntities.entityMap.values()) {
+        // Remote players stay in the scan: spectator() caches their PlayerInfo and fails without a profile.
+        var entities = player.compensatedEntities.collisionOrPlayerCandidates();
+        for (int e = 0, size = entities.size(); e < size; e++) {
+            var entity = entities.get(e);
             if (!present(entity) || spectator(entity) || !collidable(entity)) continue;
             if (candidate == null) candidate = new SimpleCollisionBox();
             for (int i = 0, count = entity.possibleMovementCollisionBoxCandidateCount(); i < count; i++) {
@@ -166,7 +169,7 @@ public final class ClientEntityQueries {
                 throw new SimWorldView.UndecidedQueryException("ender dragon part pick");
     }
 
-    private boolean pickable(PacketEntity entity) {
+    public boolean pickable(PacketEntity entity) {
         var type = modelType(entity);
         if (entity instanceof PacketEntityArmorStand stand) return !stand.actionMarker();
         if (entity instanceof PacketEntityPlayer) return !spectator(entity);
@@ -193,6 +196,14 @@ public final class ClientEntityQueries {
         if (entity.isBoat()) return true;
         if (entity.type == EntityTypeIds.SHULKER) return entity.actionAlive;
         return entity instanceof PacketEntityHappyGhast ghast && !ghast.isBaby && ghast.actionAlive && ghast.staysStill;
+    }
+
+    /**
+     * Entity#isPushable for {@code entity} at {@code bounds}, as AbstractBoat#canVehicleCollide reads it for a moving
+     * boat or minecart; EntitySelector.NO_SPECTATORS has already left out spectators.
+     */
+    public boolean pushableBy(PacketEntity entity, Box bounds) {
+        return present(entity) && !spectator(entity) && pushable(entity, bounds);
     }
 
     private boolean pushable(PacketEntity entity, Box bounds) {
@@ -304,10 +315,9 @@ public final class ClientEntityQueries {
                 || entity.type == EntityTypeIds.END_CRYSTAL;
     }
 
-    // Riders outside the local player's own riding tree have no simulated position.
     private boolean present(PacketEntity entity) {
         return (!(entity instanceof PacketEntityPlayer remote) || remote.actionPresent)
-                && !player.compensatedEntities.isUntrackedRider(entity);
+                && (!player.isBedrockMovement() || !player.compensatedEntities.isUntrackedRider(entity));
     }
 
     private boolean spectator(PacketEntity entity) {
