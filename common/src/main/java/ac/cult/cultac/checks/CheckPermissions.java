@@ -136,6 +136,7 @@ public final class CheckPermissions {
             "multiactionsr",
             "multiactionss",
             "multiactionst",
+            "multiactionsu",
             "multibreak",
             "multiinteracta",
             "multiinteractb",

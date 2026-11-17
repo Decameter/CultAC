@@ -419,6 +419,7 @@ public class CheckManager {
                 new MultiActionsR(player),
                 new MultiActionsS(player),
                 new MultiActionsT(player),
+                new MultiActionsU(player),
                 new MultiInteractA(player),
                 new MultiInteractB(player),
                 player.openWindow,
@@ -619,6 +620,8 @@ public class CheckManager {
         registerEarlyReceive(registrations, packetChecks.get(SelfInteract.class));
         registerEarlyReceive(registrations, packetChecks.get(MultiActionsA.class));
         registerEarlyReceive(registrations, packetChecks.get(MultiActionsE.class));
+        // Reads the client's use state before this use's own prediction can start one.
+        registerEarlyReceive(registrations, packetChecks.get(MultiActionsU.class));
         registerEarlyReceive(registrations, packetChecks.get(AirLiquidBreak.class));
         registerEarlyReceive(registrations, packetChecks.get(FastBreak.class));
         registerEarlyReceive(registrations, packetChecks.get(MultiBreak.class));
@@ -993,8 +996,8 @@ public class CheckManager {
         getListener(BedrockEntityReach.class).endClientTick();
         getListener(BedrockPlaceVisibility.class).endClientTick();
         // The lids step once the tick's move is predicted: the next tick's move meets this step.
-        player.bedrockState.shulkerBoxLids.tick(position -> ClientBlockProperties.isShulkerBox(
-                player.compensatedWorld.getBlockStateIdAt(BlockPos.of(position))));
+        player.bedrockState.shulkerBoxLids.tick(position ->
+                ClientBlockProperties.isShulkerBox(player.compensatedWorld.getBlockStateIdAt(BlockPos.of(position))));
         getListener(PacketEntityReplication.class).tickBedrockClient();
     }
 

@@ -80,6 +80,9 @@ checks:
   MultiActionsA:
     summary: "Attacked while using an item"
     details: "You can't attack while eating, drinking, blocking or drawing a bow. Cheat clients that fight for the player keep attacking while the item is still in use."
+  MultiActionsU:
+    summary: "Used an item while already using an item"
+    details: "You can't start using an item while you're still eating, blocking or charging a bow or crossbow. Cheats that rapid-fire a crossbow send uses while still holding the charge."
   MultiActionsE:
     summary: "Swung their arm while using an item"
     details: "You can't punch while eating, drinking, blocking or drawing a bow. A swing during item use points to a cheat client attacking or clicking for the player."

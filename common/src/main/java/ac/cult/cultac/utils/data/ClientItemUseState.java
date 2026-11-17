@@ -389,6 +389,22 @@ public final class ClientItemUseState {
         return obligation != null;
     }
 
+    /**
+     * Whether the client is certainly still in a use it was proven to start. Unlike {@link #definitelyUsing()}, an
+     * unreported selection during handleKeybinds cannot end it: Minecraft#tick sends that selection before the next
+     * tick's keybinds, so it reaches the server as a carried-item packet (ending the obligation) before any use it
+     * precedes. The obligation alone can outlive the client's local use, so this also requires that the used hand
+     * still holds the same item and that the use cannot have completed by now.
+     */
+    public boolean certainlyUsing(@Nullable SimItemStack main, @Nullable SimItemStack off) {
+        if (obligation == null) return false;
+        int remaining = obligation.remaining();
+        // An unknown duration proves nothing; at 1 the client's next entity tick may complete the use.
+        if (remaining == Integer.MIN_VALUE || remaining <= 1) return false;
+        SimItemStack held = obligation.hand() == Hand.MAIN_HAND ? main : off;
+        return held != null && !held.isEmpty() && sameItem(obligation.stack(), held);
+    }
+
     public void reset() {
         release();
         lastPreparedTick = Integer.MIN_VALUE;
